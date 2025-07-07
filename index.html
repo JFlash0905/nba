@@ -4,81 +4,93 @@
   <meta charset="UTF-8" />
   <title>Sniper J GM 模擬器 v0.1+</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    .team { margin-bottom: 30px; }
-    h2 { margin-bottom: 10px; }
-    .player-list { display: flex; flex-wrap: wrap; gap: 10px; }
-    .player { border: 1px solid #aaa; padding: 8px; cursor: pointer; border-radius: 6px; }
-    .selected { background: #00aaff; color: white; }
+    body { font-family: sans-serif; margin: 0; padding: 20px; background: #f2f2f2; }
+    h1 { background: #004d99; color: white; padding: 15px; text-align: center; }
+    .assets { background: #fff; padding: 10px; margin-bottom: 10px; border-radius: 6px; }
+    .menu { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    button { padding: 10px 15px; border: none; border-radius: 5px; background: #007bff; color: white; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .section { display: none; background: white; padding: 10px; border-radius: 6px; }
+    .visible { display: block; }
+    .player { padding: 8px; margin: 5px 0; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
+    .player button { background: #28a745; }
+    .player button:hover { background: #218838; }
   </style>
 </head>
 <body>
-  <h1>Sniper J GM 模擬器 v0.1+</h1>
 
-  <div class="team">
-    <h2>🏀 勇士隊</h2>
-    <div class="player-list" id="warriors-list"></div>
-    <label><input type="checkbox" value="2025 首輪籤" class="warriors-pick"> 2025 首輪籤</label><br>
-    <label><input type="checkbox" value="2026 首輪籤" class="warriors-pick"> 2026 首輪籤</label><br>
-    <label><input type="checkbox" value="2027 首輪籤" class="warriors-pick"> 2027 首輪籤</label>
-  </div>
+<h1>Sniper J GM 模擬器 v0.1+</h1>
 
-  <div class="team">
-    <h2>🌀 雷霆隊</h2>
-    <div class="player-list" id="thunder-list"></div>
-    <label><input type="checkbox" value="2025 首輪籤" class="thunder-pick"> 2025 首輪籤</label><br>
-    <label><input type="checkbox" value="2026 首輪籤" class="thunder-pick"> 2026 首輪籤</label><br>
-    <label><input type="checkbox" value="2027 首輪籤" class="thunder-pick"> 2027 首輪籤</label>
-  </div>
+<div class="assets">
+  <strong>🏀 球隊：</strong> 勇士｜
+  <strong>📋 首輪籤：</strong> 2025, 2026, 2027｜
+  <strong>💰 總薪資：</strong> $172M｜
+  <strong>👥 球員人數：</strong> 15人
+</div>
 
-  <button id="trade-btn">✅ 提出交易！</button>
+<div class="menu">
+  <button onclick="showSection('roster')">勇士陣容</button>
+  <button onclick="showSection('free')">自由市場</button>
+  <button onclick="showSection('teams')">其他隊伍</button>
+  <button onclick="showSection('log')">交易紀錄</button>
+</div>
 
-  <h3>📦 交易結果：</h3>
-  <div id="result"></div>
+<div id="roster" class="section visible">
+  <h2>🏀 勇士陣容</h2>
+  <div class="player">Stephen Curry - $50M</div>
+  <div class="player">Klay Thompson - $43M</div>
+  <div class="player">Andrew Wiggins - $27M</div>
+  <div class="player">Draymond Green - $25M</div>
+  <div class="player">Jonathan Kuminga - $6M</div>
+</div>
 
-  <script>
-    const warriors = ["Stephen Curry", "Klay Thompson", "Andrew Wiggins", "Draymond Green", "Jonathan Kuminga"];
-    const thunder = ["Shai Gilgeous-Alexander", "Chet Holmgren", "Josh Giddey", "Jalen Williams", "Lu Dort"];
+<div id="free" class="section">
+  <h2>🌐 自由市場</h2>
+  <div class="player">Buddy Hield - $12M <button>簽下</button></div>
+  <div class="player">Spencer Dinwiddie - $10M <button>簽下</button></div>
+  <div class="player">Kevin Love - $8M <button>簽下</button></div>
+  <div class="player">Joe Ingles - $6M <button>簽下</button></div>
+  <div class="player">Danilo Gallinari - $7M <button>簽下</button></div>
+</div>
 
-    const warriorsList = document.getElementById("warriors-list");
-    const thunderList = document.getElementById("thunder-list");
+<div id="teams" class="section">
+  <h2>🌀 雷霆隊球員</h2>
+  <div class="player">Shai Gilgeous-Alexander - $33M <button onclick="proposeTrade('SGA')">交易</button></div>
+  <div class="player">Josh Giddey - $6.6M <button onclick="proposeTrade('Giddey')">交易</button></div>
+  <div class="player">Chet Holmgren - $10M <button onclick="proposeTrade('Chet')">交易</button></div>
+  <div class="player">Jalen Williams - $4.5M <button onclick="proposeTrade('Jalen')">交易</button></div>
+  <div class="player">Lu Dort - $15M <button onclick="proposeTrade('Dort')">交易</button></div>
+</div>
 
-    const selectedWarriors = new Set();
-    const selectedThunder = new Set();
+<div id="log" class="section">
+  <h2>📋 交易紀錄</h2>
+  <p>（這裡會顯示過去的交易紀錄）</p>
+</div>
 
-    function createPlayerList(players, container, selectedSet) {
-      players.forEach(player => {
-        const div = document.createElement("div");
-        div.textContent = player;
-        div.classList.add("player");
-        div.addEventListener("click", () => {
-          if (selectedSet.has(player)) {
-            selectedSet.delete(player);
-            div.classList.remove("selected");
-          } else {
-            if (selectedSet.size < 5) {
-              selectedSet.add(player);
-              div.classList.add("selected");
-            }
-          }
-        });
-        container.appendChild(div);
-      });
+<script>
+  function showSection(id) {
+    document.querySelectorAll(".section").forEach(sec => sec.classList.remove("visible"));
+    document.getElementById(id).classList.add("visible");
+  }
+
+  function proposeTrade(targetPlayer) {
+    const input = prompt(`你想用哪些勇士球員＋籤來換 "${targetPlayer}"？請輸入名稱與籤（用逗號分隔）：\n例如：Klay, 2025`);
+    if (!input) return;
+
+    const success = Math.random() > 0.4;
+
+    if (success) {
+      alert(`✅ 交易成功！你獲得了 ${targetPlayer}`);
+    } else {
+      const autoFix = confirm(`❌ 交易失敗：薪資不符\n要不要自動補平球員來讓交易通過？`);
+      if (autoFix) {
+        alert(`✅ 加入 Moses Moody（$3M）後交易成功！你獲得了 ${targetPlayer}`);
+      } else {
+        alert(`🚫 交易取消`);
+      }
     }
+  }
+</script>
 
-    createPlayerList(warriors, warriorsList, selectedWarriors);
-    createPlayerList(thunder, thunderList, selectedThunder);
-
-    document.getElementById("trade-btn").addEventListener("click", () => {
-      const picks1 = Array.from(document.querySelectorAll(".warriors-pick:checked")).map(p => p.value);
-      const picks2 = Array.from(document.querySelectorAll(".thunder-pick:checked")).map(p => p.value);
-      const result = document.getElementById("result");
-
-      result.innerHTML = `
-        <strong>勇士送出：</strong> ${Array.from(selectedWarriors).join(", ")} ${picks1.length > 0 ? "+ " + picks1.join(", ") : ""}<br>
-        <strong>雷霆送出：</strong> ${Array.from(selectedThunder).join(", ")} ${picks2.length > 0 ? "+ " + picks2.join(", ") : ""}
-      `;
-    });
-  </script>
 </body>
 </html>

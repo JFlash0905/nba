@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sniper J GM 模擬器 v0.1+</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .team { margin-bottom: 30px; }
+    h2 { margin-bottom: 10px; }
+    .player-list { display: flex; flex-wrap: wrap; gap: 10px; }
+    .player { border: 1px solid #aaa; padding: 8px; cursor: pointer; border-radius: 6px; }
+    .selected { background: #00aaff; color: white; }
+  </style>
+</head>
+<body>
+  <h1>Sniper J GM 模擬器 v0.1+</h1>
+
+  <div class="team">
+    <h2>🏀 勇士隊</h2>
+    <div class="player-list" id="warriors-list"></div>
+    <label><input type="checkbox" value="2025 首輪籤" class="warriors-pick"> 2025 首輪籤</label><br>
+    <label><input type="checkbox" value="2026 首輪籤" class="warriors-pick"> 2026 首輪籤</label><br>
+    <label><input type="checkbox" value="2027 首輪籤" class="warriors-pick"> 2027 首輪籤</label>
+  </div>
+
+  <div class="team">
+    <h2>🌀 雷霆隊</h2>
+    <div class="player-list" id="thunder-list"></div>
+    <label><input type="checkbox" value="2025 首輪籤" class="thunder-pick"> 2025 首輪籤</label><br>
+    <label><input type="checkbox" value="2026 首輪籤" class="thunder-pick"> 2026 首輪籤</label><br>
+    <label><input type="checkbox" value="2027 首輪籤" class="thunder-pick"> 2027 首輪籤</label>
+  </div>
+
+  <button id="trade-btn">✅ 提出交易！</button>
+
+  <h3>📦 交易結果：</h3>
+  <div id="result"></div>
+
+  <script>
+    const warriors = ["Stephen Curry", "Klay Thompson", "Andrew Wiggins", "Draymond Green", "Jonathan Kuminga"];
+    const thunder = ["Shai Gilgeous-Alexander", "Chet Holmgren", "Josh Giddey", "Jalen Williams", "Lu Dort"];
+
+    const warriorsList = document.getElementById("warriors-list");
+    const thunderList = document.getElementById("thunder-list");
+
+    const selectedWarriors = new Set();
+    const selectedThunder = new Set();
+
+    function createPlayerList(players, container, selectedSet) {
+      players.forEach(player => {
+        const div = document.createElement("div");
+        div.textContent = player;
+        div.classList.add("player");
+        div.addEventListener("click", () => {
+          if (selectedSet.has(player)) {
+            selectedSet.delete(player);
+            div.classList.remove("selected");
+          } else {
+            if (selectedSet.size < 5) {
+              selectedSet.add(player);
+              div.classList.add("selected");
+            }
+          }
+        });
+        container.appendChild(div);
+      });
+    }
+
+    createPlayerList(warriors, warriorsList, selectedWarriors);
+    createPlayerList(thunder, thunderList, selectedThunder);
+
+    document.getElementById("trade-btn").addEventListener("click", () => {
+      const picks1 = Array.from(document.querySelectorAll(".warriors-pick:checked")).map(p => p.value);
+      const picks2 = Array.from(document.querySelectorAll(".thunder-pick:checked")).map(p => p.value);
+      const result = document.getElementById("result");
+
+      result.innerHTML = `
+        <strong>勇士送出：</strong> ${Array.from(selectedWarriors).join(", ")} ${picks1.length > 0 ? "+ " + picks1.join(", ") : ""}<br>
+        <strong>雷霆送出：</strong> ${Array.from(selectedThunder).join(", ")} ${picks2.length > 0 ? "+ " + picks2.join(", ") : ""}
+      `;
+    });
+  </script>
+</body>
+</html>

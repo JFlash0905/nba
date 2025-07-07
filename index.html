@@ -1,116 +1,188 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>Sniper J GM 模擬器 v0.1+</title>
+  <meta charset="UTF-8" />
+  <title>Sniper J GM 模擬器 v0.8.3 Final</title>
   <style>
-    body { font-family: monospace; background: #f4f4f4; padding: 20px; }
-    .frame { background: #fff; border-radius: 8px; padding: 20px; max-width: 700px; margin: auto; }
-    .bar { border-top: 1px solid #333; border-bottom: 1px solid #333; margin: 20px 0; padding: 10px 0; }
-    .btn-row { margin: 10px 0; }
-    button {
-      font-family: monospace;
-      padding: 6px 12px;
-      margin-right: 10px;
-      background: #0055aa;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover { background: #003f7f; }
-    .section { display: none; background: #eef; padding: 10px; border-radius: 6px; margin-top: 10px; }
-    .visible { display: block; }
-    .player { margin: 5px 0; display: flex; justify-content: space-between; }
-    .player button { background: #27ae60; }
+    body { font-family: sans-serif; padding: 20px; background: #f2f2f2; }
+    h1 { color: #2c3e50; }
+    button { margin: 5px; padding: 10px; font-size: 16px; border-radius: 5px; cursor: pointer; background-color: #3498db; color: white; border: none; }
+    button:disabled { background-color: #aaa; cursor: not-allowed; }
+    .player { background: white; margin: 10px 0; padding: 10px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; }
+    .player-info { flex-grow: 1; }
+    .container { max-width: 900px; margin: auto; }
+    .stars { font-size: 14px; color: gold; }
   </style>
 </head>
 <body>
-  <div class="frame">
-<pre>
-🔹 Sniper J GM 模擬器 v0.1+
-────────────────────────────
-📊 我的資產概覽
-🏀 球隊：勇士
-📋 首輪籤：2025, 2026, 2027
-💰 薪資總額：$172M
-👥 球員人數：15人
-────────────────────────────
-🔘 功能選單
-</pre>
-
-    <div class="btn-row">
-      <button onclick="show('roster')">勇士陣容</button>
-      <button onclick="show('free')">自由市場</button>
-      <button onclick="show('teams')">其他隊伍</button>
-      <button onclick="show('log')">交易紀錄</button>
+  <div class="container">
+    <h1>🏀 Sniper J GM 模擬器 v0.8.3 Final</h1>
+    <div>
+      <button id="clearBtn">清空存檔</button>
+      <span id="dateDisplay"></span>
+      <div id="moneyDisplay"></div>
     </div>
-
-<pre>
-────────────────────────────
-🪄 畫面內容區域
-</pre>
-
-    <div id="roster" class="section visible">
-      <h3>🏀 勇士陣容</h3>
-      <div class="player">Stephen Curry - $50M</div>
-      <div class="player">Klay Thompson - $43M</div>
-      <div class="player">Andrew Wiggins - $27M</div>
-      <div class="player">Draymond Green - $25M</div>
-      <div class="player">Jonathan Kuminga - $6M</div>
+    <div class="section">
+      <button id="showWarriorsBtn">勇士陣容</button>
+      <button id="showFreeAgentsBtn">自由市場</button>
+      <button id="selectTeamBtn">其他隊伍</button>
+      <button id="simulateGameBtn">模擬比賽</button>
+      <button id="resetTrainingBtn">重置訓練</button>
     </div>
-
-    <div id="free" class="section">
-      <h3>🌐 自由市場</h3>
-      <div class="player">Buddy Hield - $12M <button>簽下</button></div>
-      <div class="player">Spencer Dinwiddie - $10M <button>簽下</button></div>
-      <div class="player">Kevin Love - $8M <button>簽下</button></div>
-      <div class="player">Joe Ingles - $6M <button>簽下</button></div>
-      <div class="player">Danilo Gallinari - $7M <button>簽下</button></div>
-    </div>
-
-    <div id="teams" class="section">
-      <h3>🌀 雷霆隊球員</h3>
-      <div class="player">Shai Gilgeous-Alexander - $33M <button onclick="proposeTrade('SGA')">交易</button></div>
-      <div class="player">Josh Giddey - $6.6M <button onclick="proposeTrade('Giddey')">交易</button></div>
-      <div class="player">Chet Holmgren - $10M <button onclick="proposeTrade('Chet')">交易</button></div>
-      <div class="player">Jalen Williams - $4.5M <button onclick="proposeTrade('Jalen')">交易</button></div>
-      <div class="player">Lu Dort - $15M <button onclick="proposeTrade('Dort')">交易</button></div>
-    </div>
-
-    <div id="log" class="section">
-      <h3>📋 交易紀錄</h3>
-      <div id="logContent">(目前沒有交易紀錄)</div>
-    </div>
-
+    <div id="teamSelectArea"></div>
+    <div id="team"></div>
+    <div id="freeAgents"></div>
+    <div id="otherTeam"></div>
+    <div id="gameResult"></div>
   </div>
+<script>
+(() => {
+  const ratingMap = { C:1, "C+":2, "B-":3, B:4, "B+":5, "A-":6, A:7, "A+":8, S:9, "S+":10 };
+  const ratingStars = r => "★".repeat(Math.min(5, Math.round((ratingMap[r]||1)/2)));
 
-  <script>
-    function show(id) {
-      document.querySelectorAll(".section").forEach(s => s.classList.remove("visible"));
-      document.getElementById(id).classList.add("visible");
+  let warriors, freeAgents, otherTeams, money, salaryCap, lastSimDate, firstRoundPicks;
+
+  function defaultData() {
+    return {
+      warriors: [
+        { name:"Stephen Curry", rating:"S", salary:35, trainedToday:false },
+        { name:"Klay Thompson", rating:"B+", salary:20, trainedToday:false },
+        { name:"Draymond Green", rating:"B", salary:18, trainedToday:false },
+        { name:"Jonathan Kuminga", rating:"B", salary:15, trainedToday:false },
+        { name:"Andrew Wiggins", rating:"B+", salary:22, trainedToday:false },
+        { name:"Moses Moody", rating:"C+", salary:10, trainedToday:false },
+        { name:"Gary Payton II", rating:"C+", salary:9, trainedToday:false },
+        { name:"Brandin Podziemski", rating:"B-", salary:11, trainedToday:false },
+        { name:"Kevon Looney", rating:"C", salary:8, trainedToday:false }
+      ],
+      freeAgents: [
+        { name:"Malik Beasley", rating:"B", salary:15, signChance:60 },
+        { name:"Robert Covington", rating:"B-", salary:12, signChance:50 },
+        { name:"Dennis Smith Jr.", rating:"B-", salary:9, signChance:55 },
+        { name:"Justise Winslow", rating:"C+", salary:7, signChance:45 },
+        { name:"Tristan Thompson", rating:"C", salary:6, signChance:50 }
+      ],
+      otherTeams: {
+        雷霆: [
+          { name:"Shai Gilgeous-Alexander", rating:"S", salary:34 },
+          { name:"Jalen Williams", rating:"A", salary:20 },
+          { name:"Chet Holmgren", rating:"A-", salary:18 },
+          { name:"Josh Giddey", rating:"B+", salary:16 },
+          { name:"Lu Dort", rating:"B", salary:14 },
+          { name:"Isaiah Joe", rating:"B-", salary:10 }
+        ],
+        灰狼: [
+          { name:"Anthony Edwards", rating:"S", salary:32 },
+          { name:"Karl-Anthony Towns", rating:"A", salary:28 },
+          { name:"Rudy Gobert", rating:"B+", salary:25 },
+          { name:"Mike Conley", rating:"B", salary:15 },
+          { name:"Naz Reid", rating:"B", salary:14 },
+          { name:"Jaden McDaniels", rating:"B+", salary:16 }
+        ],
+        金塊: [
+          { name:"Nikola Jokic", rating:"S+", salary:38 },
+          { name:"Jamal Murray", rating:"A", salary:27 },
+          { name:"Aaron Gordon", rating:"B+", salary:24 },
+          { name:"Michael Porter Jr.", rating:"B+", salary:22 },
+          { name:"Kentavious Caldwell-Pope", rating:"B", salary:15 },
+          { name:"Reggie Jackson", rating:"B-", salary:10 }
+        ],
+        湖人: [
+          { name:"LeBron James", rating:"S", salary:36 },
+          { name:"Anthony Davis", rating:"S", salary:34 },
+          { name:"D’Angelo Russell", rating:"B+", salary:18 },
+          { name:"Austin Reaves", rating:"B", salary:14 },
+          { name:"Rui Hachimura", rating:"B-", salary:12 },
+          { name:"Gabe Vincent", rating:"C+", salary:8 }
+        ],
+        熱火: [
+          { name:"Jimmy Butler", rating:"S", salary:32 },
+          { name:"Bam Adebayo", rating:"A", salary:28 },
+          { name:"Tyler Herro", rating:"B+", salary:18 },
+          { name:"Kyle Lowry", rating:"B", salary:15 },
+          { name:"Caleb Martin", rating:"B-", salary:11 },
+          { name:"Kevin Love", rating:"C+", salary:9 }
+        ],
+        塞爾提克: [
+          { name:"Jayson Tatum", rating:"S", salary:34 },
+          { name:"Jaylen Brown", rating:"A+", salary:30 },
+          { name:"Kristaps Porzingis", rating:"A-", salary:25 },
+          { name:"Jrue Holiday", rating:"A-", salary:22 },
+          { name:"Derrick White", rating:"B+", salary:18 },
+          { name:"Al Horford", rating:"B", salary:14 }
+        ]
+      },
+      money:100, salaryCap:120, lastSimDate:null, firstRoundPicks:1
+    };
+  }
+
+  function loadData() {
+    try {
+      const s=JSON.parse(localStorage.getItem("sj_gm_data")||"null");
+      if(s&&s.warriors&&s.freeAgents&&s.otherTeams){
+        ({warriors,freeAgents,otherTeams,money,salaryCap,lastSimDate,firstRoundPicks}=s);
+      } else throw 0;
+    } catch {
+      ({warriors,freeAgents,otherTeams,money,salaryCap,lastSimDate,firstRoundPicks}=defaultData());
+      saveData();
     }
+  }
 
-    function proposeTrade(player) {
-      const input = prompt(`想用哪些勇士球員 + 首輪籤換 "${player}"？請輸入（用逗號分隔）\n例：Klay, 2025`);
-      if (!input) return;
-      const succeed = Math.random() > 0.4;
-      const log = document.getElementById("logContent");
+  function saveData(){
+    localStorage.setItem("sj_gm_data", JSON.stringify({warriors,freeAgents,otherTeams,money,salaryCap,lastSimDate,firstRoundPicks}));
+  }
 
-      if (succeed) {
-        alert(`✅ 交易成功！獲得 ${player}`);
-        log.innerHTML += `🟢 成功交易 → ${player} <br>`;
-      } else {
-        const fix = confirm(`❌ 交易失敗：薪資不符。\n是否自動補平（加入 Moses Moody）？`);
-        if (fix) {
-          alert(`✅ 加入 Moses Moody 後交易成功！獲得 ${player}`);
-          log.innerHTML += `🟡 自動補平交易 → ${player}（+Moody）<br>`;
-        } else {
-          alert("🚫 交易取消");
-          log.innerHTML += `🔴 取消交易 → ${player}<br>`;
-        }
-      }
-    }
-  </script>
+  function renderDate(){
+    const now=new Date().toLocaleDateString();
+    const ts=warriors.reduce((a,p)=>a+(p.salary||0),0);
+    const w=ts>salaryCap?" ⚠️":"";
+    document.getElementById("dateDisplay").textContent="｜今天："+now;
+    document.getElementById("moneyDisplay").textContent=`｜資金：$${money}M｜團隊工資：${ts}M / 上限：${salaryCap}M${w}｜首輪籤：${firstRoundPicks}`;
+  }
+
+  function showWarriors(){
+    const c=document.getElementById("team");
+    c.innerHTML="<h2>🏀 勇士陣容</h2>"+warriors.map((p,i)=>`
+      <div class="player">
+        <div class="player-info"><strong>${p.name}</strong>｜${p.rating}｜${ratingStars(p.rating)}｜$${p.salary}M ${p.trainedToday?"🧠已訓練":""}</div>
+        <button ${p.trainedToday?"disabled":""} data-i="${i}">訓練</button>
+      </div>`).join("");
+    c.querySelectorAll("button").forEach(btn=>{
+      btn.onclick=()=>{const i=btn.dataset.i; warriors[i].trainedToday=true; alert(warriors[i].name+" 完成訓練！"); saveData(); showWarriors();}
+    });
+  }
+
+  function simulateGame(){
+    const today=new Date().toDateString();
+    if(lastSimDate===today){alert("今天已模擬過比賽，明天再試！"); return;}
+    const rndKeys=Object.keys(otherTeams);
+    const team=rndKeys[Math.floor(Math.random()*rndKeys.length)];
+    const opp=otherTeams[team];
+    const teamScore=warriors.reduce((a,p)=>a+ratingMap[p.rating]*(Math.random()+0.5),0);
+    const oppScore=opp.reduce((a,p)=>a+ratingMap[p.rating]*(Math.random()+0.5),0);
+    const mvp=warriors.reduce((t,p)=>{const v=ratingMap[p.rating]*(Math.random()+0.5); return v>t.score?{name:p.name,score:v}:t;},{name:"",score:0});
+    document.getElementById("gameResult").innerHTML=`
+      <h2>📊 模擬比賽結果</h2>
+      <p>🏀 勇士 ${Math.round(teamScore)} : ${Math.round(oppScore)} ${team}</p>
+      <p>🎖 MVP：${mvp.name}</p>`;
+    lastSimDate=today;
+    saveData(); renderDate();
+  }
+
+  function resetTraining(){
+    warriors.forEach(p=>p.trainedToday=false);
+    alert("所有球員訓練狀態已重置！");
+    saveData(); showWarriors();
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    loadData(); renderDate(); showWarriors();
+    document.getElementById("showWarriorsBtn").onclick=showWarriors;
+    document.getElementById("simulateGameBtn").onclick=simulateGame;
+    document.getElementById("resetTrainingBtn").onclick=resetTraining;
+    document.getElementById("clearBtn").onclick=()=>{if(confirm("確定清空？")){localStorage.removeItem("sj_gm_data"); location.reload();}};
+  });
+})();
+</script>
 </body>
 </html>
